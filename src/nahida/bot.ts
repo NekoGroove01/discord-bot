@@ -1,0 +1,30 @@
+// nahida/bot.ts
+
+import generateBotClient from "../bot";
+import * as dotenv from "dotenv";
+import { nahidaExampleConversationPrompt, nahidaPrompt } from "./prompt";
+
+dotenv.config();
+
+const nahidaClient = generateBotClient(
+	"나히다",
+	"907266909916004376",
+	[
+		{
+			role: "system",
+			content: nahidaPrompt,
+		},
+		{
+			role: "system",
+			content: nahidaExampleConversationPrompt,
+		},
+	],
+	{
+		baseDelay: 400,
+		charDelay: 25,
+		maxDelay: 3000,
+		complexityMultiplier: 100,
+	}
+);
+
+export default nahidaClient;
