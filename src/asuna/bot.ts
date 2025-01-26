@@ -8,7 +8,6 @@ dotenv.config();
 
 const asunaClient = generateBotClient(
 	"아스나",
-	"907294728041676811",
 	[
 		{
 			role: "system",

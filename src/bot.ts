@@ -5,7 +5,6 @@ import {
 	Events,
 	GatewayIntentBits,
 	Message,
-	MessageFlags,
 	TextChannel,
 } from "discord.js";
 import * as dotenv from "dotenv";
@@ -13,6 +12,7 @@ import { debugLog, loadChatHistory } from "./utils.js";
 import { MessageBuffer } from "./types.js";
 import { analyzeMessageCompletion } from "./openai.js";
 import { processUserMessagesToCharacter } from "./process.js";
+import BotState from "./bot_state.js";
 
 /*
 환경 변수들 정의
@@ -23,7 +23,6 @@ dotenv.config();
 
 function generateBotClient(
 	characterName: string,
-	channelId: string,
 	prompt: { role: "system" | "assistant" | "user"; content: string }[],
 	typingConfig: {
 		baseDelay: number;
@@ -44,15 +43,17 @@ function generateBotClient(
 	});
 
 	const userMessageBuffer = new Map<string, MessageBuffer>();
+	const botState = new BotState();
 
 	// 메세지 받는 기능
 	client.on(Events.MessageCreate, async (message: Message) => {
 		try {
-			if (message.author.bot) return;
-
-			if (!message.channelId.includes(channelId)) {
+			if (message.author.bot) {
+				debugLog("봇 메시지:", message.content);
 				return;
 			}
+
+			if (botState.getJoinedState() === false) return;
 
 			debugLog("Received message:", message.content);
 
@@ -111,8 +112,16 @@ function generateBotClient(
 
 		const { commandName } = interaction;
 
-		if (commandName === "ping") {
-			await interaction.reply("Pong!");
+		switch (commandName) {
+			case "ping":
+				await interaction.reply("pong!");
+				break;
+			case "join":
+				botState.setJoinedState(true);
+				await interaction.reply("대화에 참여합니다!");
+				break;
+			default:
+				break;
 		}
 	});
 

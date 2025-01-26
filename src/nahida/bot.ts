@@ -8,7 +8,6 @@ dotenv.config();
 
 const nahidaClient = generateBotClient(
 	"나히다",
-	"907266909916004376",
 	[
 		{
 			role: "system",
