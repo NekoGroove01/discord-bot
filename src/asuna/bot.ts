@@ -1,7 +1,7 @@
 // asuna/bot.ts
 
-import generateBotClient from "../bot";
-import { asunaPrompt } from "./prompt";
+import generateBotClient from "../bot.js";
+import { asunaPrompt } from "./prompt.js";
 import * as dotenv from "dotenv";
 
 dotenv.config();

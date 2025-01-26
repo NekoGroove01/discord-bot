@@ -1,4 +1,11 @@
 // bot_types.ts
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+
+interface Command {
+	data: SlashCommandBuilder;
+	execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+}
+
 interface MessageBuffer {
 	messages: string[]; // 현재 처리 대기중인 메시지들
 	conversation: { role: "user" | "assistant"; content: string }[]; // 대화 히스토리
@@ -14,4 +21,4 @@ interface TypingConfig {
 	complexityMultiplier: number;
 }
 
-export { MessageBuffer, TypingConfig };
+export { Command, MessageBuffer, TypingConfig };

@@ -5,11 +5,12 @@ import {
 	Events,
 	GatewayIntentBits,
 	Message,
+	MessageFlags,
 	TextChannel,
 } from "discord.js";
 import * as dotenv from "dotenv";
 import { debugLog, loadChatHistory } from "./utils.js";
-import { MessageBuffer } from "./bot_types.js";
+import { MessageBuffer } from "./types.js";
 import { analyzeMessageCompletion } from "./openai.js";
 import { processUserMessagesToCharacter } from "./process.js";
 
@@ -36,11 +37,15 @@ function generateBotClient(
 			GatewayIntentBits.Guilds,
 			GatewayIntentBits.GuildMessages,
 			GatewayIntentBits.MessageContent,
+			GatewayIntentBits.DirectMessagePolls,
+			GatewayIntentBits.GuildMessageReactions,
+			GatewayIntentBits.DirectMessageReactions,
 		],
 	});
 
 	const userMessageBuffer = new Map<string, MessageBuffer>();
 
+	// 메세지 받는 기능
 	client.on(Events.MessageCreate, async (message: Message) => {
 		try {
 			if (message.author.bot) return;
@@ -97,6 +102,17 @@ function generateBotClient(
 			if (message.channel.isTextBased() && "send" in message.channel) {
 				await message.channel.send("미안, 메시지 처리 중 오류가 발생했어.");
 			}
+		}
+	});
+
+	// 상호작용 받는 기능
+	client.on("interactionCreate", async (interaction) => {
+		if (!interaction.isCommand()) return;
+
+		const { commandName } = interaction;
+
+		if (commandName === "ping") {
+			await interaction.reply("Pong!");
 		}
 	});
 

@@ -1,8 +1,8 @@
 // nahida/bot.ts
 
-import generateBotClient from "../bot";
+import generateBotClient from "../bot.js";
 import * as dotenv from "dotenv";
-import { nahidaExampleConversationPrompt, nahidaPrompt } from "./prompt";
+import { nahidaExampleConversationPrompt, nahidaPrompt } from "./prompt.js";
 
 dotenv.config();
 

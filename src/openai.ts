@@ -1,8 +1,8 @@
 // openai.ts
 import OpenAI from "openai";
 import * as dotenv from "dotenv";
-import { debugLog } from "./utils";
-import { discordPrompt, systemPrompt } from "./prompt";
+import { debugLog } from "./utils.js";
+import { discordPrompt, systemPrompt } from "./prompt.js";
 
 dotenv.config();
 

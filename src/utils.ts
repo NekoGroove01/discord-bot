@@ -1,6 +1,6 @@
 // utils.ts
 import { Client, NewsChannel, TextChannel } from "discord.js";
-import { MessageBuffer, TypingConfig } from "./bot_types";
+import { MessageBuffer, TypingConfig } from "./types.js";
 
 /*
 메세지 관련 함수들
@@ -92,16 +92,26 @@ async function loadChatHistory(
 }
 
 function cleanBotResponse(response: string): string {
-	// ##Approved로 시작하는 첫 줄 제거
-	const lines = response.split("\n");
-	if (lines[0]?.trim().startsWith("##Approved")) {
-		lines.shift();
-		// 첫 줄 제거 후 빈 줄이 있다면 그것도 제거
-		while (lines.length > 0 && lines[0].trim() === "") {
-			lines.shift();
+	// Handle empty or undefined response
+	if (!response) return "";
+
+	// Split into lines and remove any whitespace
+	const lines = response.trim().split("\n");
+
+	// Skip lines that start with ##Approved (case insensitive)
+	let startIndex = 0;
+	while (
+		startIndex < lines.length &&
+		lines[startIndex].trim().toLowerCase().startsWith("##approved")
+	) {
+		startIndex++;
+		// Skip any empty lines after ##Approved
+		while (startIndex < lines.length && !lines[startIndex].trim()) {
+			startIndex++;
 		}
 	}
-	return lines.join("\n");
+
+	return lines.slice(startIndex).join("\n");
 }
 
 /*

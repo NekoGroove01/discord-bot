@@ -1,5 +1,5 @@
 import { Client } from "discord.js";
-import { MessageBuffer } from "./bot_types.js";
+import { MessageBuffer } from "./types.js";
 import {
 	calculateDynamicTypingDuration,
 	cleanBotResponse,
@@ -15,13 +15,13 @@ export async function processUserMessagesToCharacter(
 	client: Client,
 	userId: string,
 	channelId: string,
-    prompt: {role: "system" | "assistant" | "user", content: string}[],
-    typingConfig: {
-        baseDelay: number;
-        charDelay: number;
-        maxDelay: number;
-        complexityMultiplier: number;
-    }
+	prompt: { role: "system" | "assistant" | "user"; content: string }[],
+	typingConfig: {
+		baseDelay: number;
+		charDelay: number;
+		maxDelay: number;
+		complexityMultiplier: number;
+	}
 ) {
 	try {
 		const buffer = userMessageBuffer.get(userId);
@@ -45,7 +45,10 @@ export async function processUserMessagesToCharacter(
 		buffer.conversation.push({ role: "user", content: combinedMessage });
 
 		debugLog("API 호출 시작", { conversation: buffer.conversation.length });
-		const response = await generateCharacterResponse(prompt, buffer.conversation);
+		const response = await generateCharacterResponse(
+			prompt,
+			buffer.conversation
+		);
 
 		if (!response) {
 			debugLog("API 응답 없음");
