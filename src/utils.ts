@@ -133,7 +133,6 @@ function createNewBuffer(
 		messages: [],
 		conversation: [],
 		isProcessing: false,
-		isJoined: false,
 		lastBotResponse: new Date(0),
 		lastUserInteraction: new Date(),
 	});

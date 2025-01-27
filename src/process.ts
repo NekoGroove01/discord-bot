@@ -44,6 +44,12 @@ export async function processUserMessagesToCharacter(
 		const combinedMessage = currentMessages.join("\n");
 		buffer.conversation.push({ role: "user", content: combinedMessage });
 
+		// Add context about which bot is being responded to
+		if (client.users.cache.get(userId)?.bot) {
+			const botContext = `You are responding to ${client.users.cache.get(userId)?.username}. Keep the conversation natural and engaging.`;
+			prompt.push({ role: "system", content: botContext });
+		}
+
 		debugLog("API 호출 시작", { conversation: buffer.conversation.length });
 		const response = await generateCharacterResponse(
 			prompt,
@@ -65,6 +71,12 @@ export async function processUserMessagesToCharacter(
 		// 버퍼 업데이트
 		buffer.isProcessing = false;
 		userMessageBuffer.set(userId, buffer);
+
+		 // Add slight random delay for more natural bot-to-bot interactions
+		if (client.users.cache.get(userId)?.bot) {
+			const randomDelay = Math.random() * 1000 + 500; // 0.5 to 1.5 seconds
+			await new Promise(resolve => setTimeout(resolve, randomDelay));
+		}
 
 		// 각 라인 전송
 		for (const line of responseLines) {

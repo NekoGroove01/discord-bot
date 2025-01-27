@@ -14,6 +14,9 @@ function registerCommands(
 		new SlashCommandBuilder()
 			.setName("join")
 			.setDescription("대화에 참여합니다!"),
+		new SlashCommandBuilder()
+			.setName("leave")
+			.setDescription("대화에서 나갑니다!"),
 	].map((command) => command.toJSON());
 
 	const rest = new REST({ version: "10" }).setToken(token);
