@@ -8,22 +8,14 @@ dotenv.config();
 
 const nahidaClient = generateBotClient(
 	"나히다",
-	[
-		{
-			role: "system",
-			content: nahidaPrompt,
-		},
-		{
-			role: "system",
-			content: nahidaExampleConversationPrompt,
-		},
-	],
+	nahidaPrompt,
 	{
 		baseDelay: 400,
 		charDelay: 25,
 		maxDelay: 3000,
 		complexityMultiplier: 100,
-	}
+	},
+	nahidaExampleConversationPrompt
 );
 
 export default nahidaClient;

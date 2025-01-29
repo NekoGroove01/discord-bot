@@ -12,3 +12,8 @@ registerCommands(
 	process.env.NAHIDA_CLIENT_ID!,
 	process.env.GUILD_ID!
 );
+registerCommands(
+	process.env.DISCORD_ARIS_TOKEN!,
+	process.env.ARIS_CLIENT_ID!,
+	process.env.GUILD_ID!
+);

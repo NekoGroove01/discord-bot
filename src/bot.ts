@@ -9,8 +9,8 @@ import {
 } from "discord.js";
 import * as dotenv from "dotenv";
 import { debugLog, loadChatHistory } from "./utils.js";
-import { MessageBuffer } from "./types.js";
-import { analyzeMessageCompletion } from "./openai.js";
+import { MessageBuffer, Prompt } from "./types.js";
+import { analyzeMessageCompletion } from "./llm_client.js";
 import { processUserMessagesToCharacter } from "./process.js";
 import BotState from "./state/bot_state.js";
 import botQueue from "./state/bot_queue.js";
@@ -24,22 +24,21 @@ dotenv.config();
 
 function generateBotClient(
 	characterName: string,
-	prompt: { role: "system" | "assistant" | "user"; content: string }[],
-	typingConfig: {
+	characterPrompt: string,
+	typingConfig?: {
 		baseDelay: number;
 		charDelay: number;
 		maxDelay: number;
 		complexityMultiplier: number;
-	}
+	},
+	exampleConversation?: string,
+	prompt: Prompt[] = []
 ): Client {
 	const client = new Client({
 		intents: [
 			GatewayIntentBits.Guilds,
 			GatewayIntentBits.GuildMessages,
 			GatewayIntentBits.MessageContent,
-			GatewayIntentBits.DirectMessagePolls,
-			GatewayIntentBits.GuildMessageReactions,
-			GatewayIntentBits.DirectMessageReactions,
 		],
 	});
 
@@ -96,10 +95,17 @@ function generateBotClient(
 			if (shouldRespond) {
 				await processUserMessagesToCharacter(
 					userMessageBuffer,
-					client,
-					message.author.id,
-					message.channel.id,
-					prompt,
+					{
+						client,
+						userId: message.author.id,
+						channelId: message.channel.id,
+					},
+					{
+						prompt,
+						characterPrompt,
+						exampleConversation,
+					},
+					characterName,
 					typingConfig
 				);
 			}
@@ -135,10 +141,17 @@ function generateBotClient(
 			for (const { bot } of bots) {
 				await processUserMessagesToCharacter(
 					userMessageBuffer,
-					bot,
-					userId,
-					message.channel.id,
-					prompt,
+					{
+						client: bot,
+						userId: message.author.id,
+						channelId: message.channel.id,
+					},
+					{
+						prompt,
+						characterPrompt,
+						exampleConversation,
+					},
+					characterName,
 					typingConfig
 				);
 			}

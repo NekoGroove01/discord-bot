@@ -71,14 +71,14 @@ async function loadChatHistory(
 			if (msg.author.bot && msg.author.id === client.user?.id) {
 				// 봇 메시지
 				buffer.conversation.push({
-					role: "assistant",
-					content: msg.content,
+					role: "model",
+					parts: [{ text: msg.content }],
 				});
 			} else if (!msg.author.bot) {
 				// 사용자 메시지
 				buffer.conversation.push({
 					role: "user",
-					content: msg.content,
+					parts: [{ text: msg.content }],
 				});
 			}
 		}
@@ -102,7 +102,7 @@ function cleanBotResponse(response: string): string {
 	let startIndex = 0;
 	while (
 		startIndex < lines.length &&
-		lines[startIndex].trim().toLowerCase().startsWith("##approved")
+		lines[startIndex].trim().toLowerCase().startsWith("##")
 	) {
 		startIndex++;
 		// Skip any empty lines after ##Approved
@@ -111,7 +111,12 @@ function cleanBotResponse(response: string): string {
 		}
 	}
 
-	return lines.slice(startIndex).join("\n");
+	// Remove lines containing '---'
+	const cleanedLines = lines
+		.slice(startIndex)
+		.filter((line) => !line.includes("---"));
+
+	return cleanedLines.join("\n");
 }
 
 /*

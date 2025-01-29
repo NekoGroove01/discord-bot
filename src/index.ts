@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import { debugLog } from "./utils.js";
 import nahidaClient from "./\bnahida/bot.js";
 import asunaClient from "./asuna/bot.js";
+import arisClient from "./aris/bot.js";
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ async function startBots() {
 		await Promise.all([
 			nahidaClient.login(process.env.DISCORD_NAHIDA_TOKEN),
 			asunaClient.login(process.env.DISCORD_ASUNA_TOKEN),
+			arisClient.login(process.env.DISCORD_ARIS_TOKEN),
 		]);
 
 		debugLog("모든 봇이 성공적으로 시작되었습니다.");

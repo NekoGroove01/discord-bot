@@ -17,10 +17,10 @@
 	"dependencies": {
 		"@discordjs/builders": "^1.10.0",
 		"@discordjs/rest": "^2.4.2",
+		"@google/generative-ai": "^0.21.0",
 		"discord-api-types": "^0.37.117",
 		"discord.js": "^14.17.3",
-		"dotenv": "^16.4.7",
-		"openai": "^4.78.1"
+		"dotenv": "^16.4.7"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.7",

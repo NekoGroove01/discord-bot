@@ -6,20 +6,11 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const asunaClient = generateBotClient(
-	"아스나",
-	[
-		{
-			role: "system",
-			content: asunaPrompt,
-		},
-	],
-	{
-		baseDelay: 200,
-		charDelay: 25,
-		maxDelay: 2500,
-		complexityMultiplier: 85,
-	}
-);
+const asunaClient = generateBotClient("아스나", asunaPrompt, {
+	baseDelay: 200,
+	charDelay: 25,
+	maxDelay: 2500,
+	complexityMultiplier: 85,
+});
 
 export default asunaClient;
