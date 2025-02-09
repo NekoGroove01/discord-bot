@@ -6,7 +6,7 @@
 */
 // 먼저 types.ts에 정의된 MessageBuffer 타입을 사용합니다.
 import { Client, NewsChannel, TextChannel } from "discord.js";
-import { BotEmotion, MessageBuffer, Conversation } from "./types.js";
+import { MessageBuffer, Conversation } from "./types.js";
 import { filterMessagesFromCommand } from "./utils.js";
 
 export interface ChatHistoryOptions {
@@ -47,8 +47,6 @@ export class ChatHistoryManager {
 			messages: [],
 			conversation: [],
 			isProcessing: false,
-			currentEmotion: BotEmotion.NEUTRAL,
-			emotionTimestamp: new Date(),
 		};
 		this.userBuffers.set(userId, buffer);
 		return buffer;
@@ -172,29 +170,6 @@ export class ChatHistoryManager {
 			role: "model",
 			parts: [{ text: response }],
 		});
-
-		// Check and reset emotion if needed
-		this.checkAndResetEmotion(buffer);
-	}
-
-	setEmotion(userId: string, emotion: BotEmotion): void {
-		const buffer = this.userBuffers.get(userId);
-		if (buffer) {
-			buffer.currentEmotion = emotion;
-			buffer.emotionTimestamp = new Date();
-		}
-	}
-
-	private checkAndResetEmotion(buffer: MessageBuffer): void {
-		const now = new Date();
-		if (
-			buffer.emotionTimestamp &&
-			now.getTime() - buffer.emotionTimestamp.getTime() >
-				this.EMOTION_RESET_TIME
-		) {
-			buffer.currentEmotion = BotEmotion.NEUTRAL;
-			buffer.emotionTimestamp = now;
-		}
 	}
 }
 

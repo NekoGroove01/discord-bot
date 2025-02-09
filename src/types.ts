@@ -6,16 +6,6 @@ export interface Command {
 	execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
 
-export enum BotEmotion {
-	NEUTRAL = "NEUTRAL",
-	HAPPY = "HAPPY",
-	SAD = "SAD",
-	ANGRY = "ANGRY",
-	JOYFUL = "JOYFUL",
-	SCARED = "SCARED",
-	CONFUSED = "CONFUSED",
-}
-
 export interface Conversation {
 	role: "user" | "model";
 	parts: { text: string }[];
@@ -25,8 +15,6 @@ export interface MessageBuffer {
 	messages: string[]; // 현재 처리 대기중인 메시지들
 	conversation: Conversation[]; // 대화 히스토리
 	isProcessing: boolean; // 현재 메시지 처리 중인지 여부
-	currentEmotion: BotEmotion;
-	emotionTimestamp: Date;
 }
 
 export interface AIResponse {
