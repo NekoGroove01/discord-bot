@@ -1,4 +1,4 @@
-import registerCommands from "./deploy-commands";
+import registerCommands from "./deployCommands";
 import * as dotenv from "dotenv";
 
 dotenv.config();

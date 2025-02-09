@@ -1,12 +1,12 @@
-// utils.ts
-import { Client, NewsChannel, TextChannel } from "discord.js";
-import { MessageBuffer, TypingConfig } from "./types.js";
-
 /*
 메세지 관련 함수들
 */
 
-/// OPENAI API에서 받은 응답을 자연스러운 라인으로 분리 - 메시지 전송에 사용
+/**
+ * API에서 받은 응답을 자연스럽게 타이핑할 수 있도록 줄로 나눕니다.
+ * @param response string
+ * @returns string Array ([Line1, Line2, ...])
+ */
 function splitIntoNaturalLines(response: string): string[] {
 	return response
 		.split(/(?<=[.!?])\s+/)
@@ -14,11 +14,21 @@ function splitIntoNaturalLines(response: string): string[] {
 		.filter((line) => line.length > 0);
 }
 
-/// 동적 타이핑 시간 계산을 위해 사용
-function calculateDynamicTypingDuration(
-	message: string,
-	config: TypingConfig
-): number {
+/**
+ * 봇의 응답을 자연스럽게 타이핑하는 데 필요한 시간을 계산합니다.
+ * 복잡도에 따라 기본 시간과 문자 수에 따라 추가 시간이 적용됩니다.
+ * 최대 시간은 2.5초로 제한됩니다.
+ * @param message string
+ * @returns number
+ */
+function calculateDynamicTypingDuration(message: string): number {
+	// 타이핑 설정
+	const config = {
+		baseDelay: 100,
+		charDelay: 25,
+		complexityMultiplier: 50,
+		maxDelay: 2500,
+	};
 	// 메시지 복잡도 계산
 	const complexity = calculateMessageComplexity(message);
 
@@ -31,7 +41,16 @@ function calculateDynamicTypingDuration(
 	return Math.min(baseTime + charTime + complexityTime, config.maxDelay);
 }
 
-/// 메시지 복잡도 계산 - 동적 타이핑 시간 계산에 사용
+/**
+ * 메시지의 복잡도를 계산합니다.
+ * 복잡도 요소:
+ * - 코드 블록 포함 여부
+ * - URL 포함 여부
+ * - 특수 문자 비율
+ * - 단어 수
+ * @param message string
+ * @returns int
+ */
 function calculateMessageComplexity(message: string): number {
 	// 복잡도 요소들
 	const hasCode = /```[\s\S]*?```/.test(message);
@@ -48,105 +67,49 @@ function calculateMessageComplexity(message: string): number {
 	return complexity;
 }
 
-/// 과거 채팅 히스토리 로드 - 사용자가 채팅을 시작할 때 - 메세지 처리에서 사용됨
-async function loadChatHistory(
-	userMessageBuffer: Map<string, MessageBuffer>,
-	client: Client,
-	channel: TextChannel | NewsChannel,
-	userId: string,
-	limits: number = 100
-): Promise<MessageBuffer> {
-	try {
-		const messages = await channel.messages.fetch({ limit: limits });
-		let buffer = userMessageBuffer.get(userId);
-		if (!buffer) {
-			debugLog("사용자 버퍼를 찾을 수 없습니다. 새로 생성합니다.");
-			buffer = createNewBuffer(userMessageBuffer, userId);
-		}
-
-		// 시간순으로 정렬 (오래된 메시지부터)
-		const sortedMessages = Array.from(messages.values()).reverse();
-
-		for (const msg of sortedMessages) {
-			if (msg.author.bot && msg.author.id === client.user?.id) {
-				// 봇 메시지
-				buffer.conversation.push({
-					role: "model",
-					parts: [{ text: msg.content }],
-				});
-			} else if (!msg.author.bot) {
-				// 사용자 메시지
-				buffer.conversation.push({
-					role: "user",
-					parts: [{ text: msg.content }],
-				});
-			}
-		}
-
-		userMessageBuffer.set(userId, buffer);
-		return buffer;
-	} catch (error) {
-		debugLog("채팅 히스토리 로드 오류:", error);
-		return createNewBuffer(userMessageBuffer, userId);
-	}
-}
+/**
+ * 봇의 응답을 불필요한 텍스트나 기호를 제거한 후 반환합니다.
+ * 반환 목록:
+ * - ##Approved, ###Response (공백 포함 여부 상관없이)
+ * - 코드 블록 (```...```)
+ * - 단일 코드 틱 (`)
+ * - 수평선 (---)
+ * - 빈 줄
+ * @param response string
+ * @returns string text
+ */
 
 function cleanBotResponse(response: string): string {
 	// Handle empty or undefined response
 	if (!response) return "";
 
-	// Split into lines and remove any whitespace
-	const lines = response.trim().split("\n");
-
-	// Skip lines that start with ##Approved (case insensitive)
-	let startIndex = 0;
-	while (
-		startIndex < lines.length &&
-		lines[startIndex].trim().toLowerCase().startsWith("##")
-	) {
-		startIndex++;
-		// Skip any empty lines after ##Approved
-		while (startIndex < lines.length && !lines[startIndex].trim()) {
-			startIndex++;
-		}
-	}
-
-	// Remove lines containing '---'
-	const cleanedLines = lines
-		.slice(startIndex)
-		.filter((line) => !line.includes("---"));
-
-	return cleanedLines.join("\n");
+	return (
+		response
+			// Remove all variations of ##Approved and ###Response (with or without spaces)
+			.replace(/##\s*Approved/gi, "")
+			.replace(/###\s*Response/gi, "")
+			// Remove markdown code blocks
+			.replace(/```[\s\S]*?```/g, "")
+			// Remove single line code ticks
+			.replace(/`/g, "")
+			// Remove horizontal rules
+			.replace(/---+/g, "")
+			// Remove empty lines and trim
+			.split("\n")
+			.map((line) => line.trim())
+			.filter((line) => line.length > 0)
+			.join("\n")
+			// Final trim to remove any remaining whitespace at the start or end
+			.trim()
+	);
 }
 
-/*
-버퍼 관련 함수들
-*/
-
-function refreshBuffer(buffer: MessageBuffer): void {
-	buffer.messages = [];
-	buffer.conversation = [];
-	buffer.isProcessing = false;
-	buffer.lastBotResponse = new Date();
-}
-
-function createNewBuffer(
-	userMessageBuffer: Map<string, MessageBuffer>,
-	userId: string
-): MessageBuffer {
-	userMessageBuffer.set(userId, {
-		messages: [],
-		conversation: [],
-		isProcessing: false,
-		lastBotResponse: new Date(0),
-		lastUserInteraction: new Date(),
-	});
-	return userMessageBuffer.get(userId) as MessageBuffer;
-}
-
-/* 
-디버깅 로그 함수 
-*/
+/**
+ * 디버깅 메시지를 출력합니다.
+ * 포맷: [timestamp] - message
+ * @param message string
+ * @param data any
+ */
 
 function debugLog(message: string, data?: any) {
 	const timestamp = new Date().toISOString();
@@ -154,12 +117,29 @@ function debugLog(message: string, data?: any) {
 	if (data) console.log(data);
 }
 
+/**
+ * 채팅 기록에서 명령어를 찾습니다.
+ * 해당 명령어부터 채팅 기록이 시작되어 사용자의 입력까지만 반환합니다.
+ */
+
+function isCommand(content: string): boolean {
+	// Assuming commands start with '!' or '/'
+	return content.startsWith("!") || content.startsWith("/");
+}
+
+function findFirstCommandIndex(messages: any[]): number {
+	return messages.findIndex((msg) => isCommand(msg.content));
+}
+
+function filterMessagesFromCommand(messages: any[]): any[] {
+	const commandIndex = findFirstCommandIndex(messages);
+	return commandIndex === -1 ? messages : messages.slice(commandIndex);
+}
+
 export {
 	splitIntoNaturalLines,
 	calculateDynamicTypingDuration,
-	loadChatHistory,
 	cleanBotResponse,
-	refreshBuffer,
-	createNewBuffer,
 	debugLog,
+	filterMessagesFromCommand,
 };

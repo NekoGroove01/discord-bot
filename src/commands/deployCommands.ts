@@ -1,5 +1,5 @@
 import { REST, Routes, SlashCommandBuilder } from "discord.js";
-import { debugLog } from "./utils";
+import { debugLog } from "../utils";
 
 function registerCommands(
 	token: string,

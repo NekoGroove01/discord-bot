@@ -1,31 +1,35 @@
-// bot_types.ts
-import {
-	ChatInputCommandInteraction,
-	Client,
-	SlashCommandBuilder,
-} from "discord.js";
+// types.ts
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 
-interface Command {
+export interface Command {
 	data: SlashCommandBuilder;
 	execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
 
-interface MessageBuffer {
+export enum BotEmotion {
+	NEUTRAL = "NEUTRAL",
+	HAPPY = "HAPPY",
+	SAD = "SAD",
+	ANGRY = "ANGRY",
+	JOYFUL = "JOYFUL",
+	SCARED = "SCARED",
+	CONFUSED = "CONFUSED",
+}
+
+export interface Conversation {
+	role: "user" | "model";
+	parts: { text: string }[];
+}
+
+export interface MessageBuffer {
 	messages: string[]; // 현재 처리 대기중인 메시지들
-	conversation: { role: "user" | "model"; parts: { text: string }[] }[]; // 대화 히스토리
+	conversation: Conversation[]; // 대화 히스토리
 	isProcessing: boolean; // 현재 메시지 처리 중인지 여부
-	lastBotResponse: Date; // 마지막 봇 응답 시간
-	lastUserInteraction: Date; // 마지막 사용자 상호작용 시간
+	currentEmotion: BotEmotion;
+	emotionTimestamp: Date;
 }
 
-interface TypingConfig {
-	baseDelay: number;
-	charDelay: number;
-	maxDelay: number;
-	complexityMultiplier: number;
-}
-
-interface AIResponse {
+export interface AIResponse {
 	content: string;
 	metadata?: {
 		modelName: string;
@@ -34,7 +38,7 @@ interface AIResponse {
 	};
 }
 
-interface AIRequestConfig {
+export interface AIRequestConfig {
 	temperature?: number;
 	topP?: number;
 	maxTokens?: number;
@@ -42,36 +46,24 @@ interface AIRequestConfig {
 	frequencyPenalty?: number;
 }
 
-interface Message {
+export interface Message {
 	role: "user" | "model";
 	content: string;
 }
 
-interface Prompt {
+export interface Prompt {
 	role: "user" | "model";
 	parts: { text: string }[];
 }
 
-interface ClientInfo {
-	client: Client;
-	userId: string;
-	channelId: string;
-}
-
-interface PromptInfo {
-	prompt: Prompt[];
-	characterPrompt: string;
+export interface CharInfo {
+	name: string;
+	description: string;
 	exampleConversation?: string;
 }
 
-export {
-	Command,
-	MessageBuffer,
-	TypingConfig,
-	AIResponse,
-	AIRequestConfig,
-	Message,
-	Prompt,
-	ClientInfo,
-	PromptInfo,
-};
+export interface TimeInfo {
+	hour: number;
+	minute: number;
+	isDay: boolean;
+}

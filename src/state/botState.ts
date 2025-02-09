@@ -1,3 +1,4 @@
+// state/bot_state.ts
 class BotState {
 	private isJoined: boolean;
 	private readonly conversationParticipants: Set<string>;

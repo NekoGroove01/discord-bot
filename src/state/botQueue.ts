@@ -1,3 +1,4 @@
+// state/bot_queue.ts
 import { Client } from "discord.js";
 
 class BotQueue {

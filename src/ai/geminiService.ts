@@ -3,34 +3,39 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { debugLog } from "../utils";
 import { Prompt } from "../types";
 
+export enum GeminiModel {
+	Pro = "gemini-2.0-pro-exp-02-05",
+	Flash = "gemini-2.0-flash",
+}
+
+export interface GeminiServiceConfig {
+	temperature?: number;
+	topP?: number;
+	maxOutputTokens?: number;
+}
+
+
 export class GeminiService {
 	private readonly genAI: GoogleGenerativeAI;
 	private readonly model: any;
 
-	constructor(apiKey: string) {
+	constructor(apiKey: string, model: GeminiModel = GeminiModel.Pro) {
 		this.genAI = new GoogleGenerativeAI(apiKey);
 		this.model = this.genAI.getGenerativeModel({
-			model: "gemini-2.0-flash-exp",
+			model: model,
 		});
 	}
 
-	async generateResponse(prompt: Prompt[]): Promise<string | null> {
+	async generateResponse(prompt: Prompt[], config?: GeminiServiceConfig): Promise<string | null> {
+		const { temperature, topP, maxOutputTokens } = config || {};
 		try {
 			const result = await this.model.generateContent({
 				contents: prompt,
 				generationConfig: {
-					temperature: 1,
-					topK: 0,
-					topP: 0.9,
-					maxOutputTokens: 500,
+					temperature: temperature ?? 0.5,
+					topP: topP ?? 0.9,
+					maxOutputTokens: maxOutputTokens ?? 150,
 				},
-				safetySettings: [
-					{ category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "OFF" },
-					{ category: "HARM_CATEGORY_HATE_SPEECH", threshold: "OFF" },
-					{ category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
-					{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "OFF" },
-					{ category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "OFF" },
-				],
 			});
 
 			return result.response.text();
