@@ -203,17 +203,28 @@ function generateBotClient(config: BotClientConfig): Client {
 				await interaction.reply("pong!");
 				break;
 			case "join":
+				// 이미 참여 중이면 무시
+				if (botState.getJoinedState()) return;
+
 				botQueue.addBot(client, botPriority);
 				botPriority++;
 				botState.setJoinedState(true);
+
+				// 대화 히스토리 초기화
 				chatHistoryManager.resetBuffer(interaction.user.id);
+
 				await interaction.reply(`${name}가 대화에 참여합니다!`);
 				break;
 			case "leave":
+				// 참여 중이 아니면 무시
+				if (!botState.getJoinedState()) return;
+
 				botQueue.removeBot(client);
 				botState.setJoinedState(false);
+				// 대화 히스토리 초기화
 				chatHistoryManager.resetBuffer(interaction.user.id);
-				await interaction.reply(`${name}가 대화에서 나갔어.`);
+
+				await interaction.reply(`${name}가 대화에서 나갔습니다.`);
 				break;
 			default:
 				break;

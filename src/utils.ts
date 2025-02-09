@@ -88,6 +88,7 @@ function cleanBotResponse(response: string): string {
 			// Remove all variations of ##Approved and ###Response (with or without spaces)
 			.replace(/##\s*Approved/gi, "")
 			.replace(/###\s*Response/gi, "")
+			.replace(/Response/gi, "")
 			// Remove markdown code blocks
 			.replace(/```[\s\S]*?```/g, "")
 			// Remove single line code ticks
