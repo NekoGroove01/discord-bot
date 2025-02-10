@@ -137,6 +137,12 @@ function filterMessagesFromCommand(messages: any[]): any[] {
 	return commandIndex === -1 ? messages : messages.slice(commandIndex);
 }
 
+/**
+ * 메세지 중 봇 커맨드 이외 명령어를 감지하는 유틸 함수
+ * @param content string
+ * @returns boolean
+ */
+
 export {
 	splitIntoNaturalLines,
 	calculateDynamicTypingDuration,

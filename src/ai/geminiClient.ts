@@ -10,6 +10,7 @@ import {
 } from "./prompt.js";
 import { CharInfo, Prompt, TimeInfo } from "../types.js";
 import { GeminiModel, GeminiService } from "./geminiService.js";
+import { BasicHelpInstruction, helpPrompt } from "./instruction.js";
 
 dotenv.config();
 
@@ -118,4 +119,47 @@ async function analyzeMessageCompletion(messages: string[]): Promise<number> {
 	}
 }
 
-export { analyzeMessageCompletion, generateCharacterResponse };
+async function generateHelpResponse(charInfo: CharInfo): Promise<string> {
+	const geminiService = new GeminiService(
+		process.env.GEMINI_API_KEY!,
+		GeminiModel.Flash
+	);
+
+	try {
+		const { name, description, exampleConversation } = charInfo;
+		const response = await geminiService.generateResponse(
+			[
+				{
+					role: "user",
+					parts: [
+						{
+							text: BasicHelpInstruction.replace("{{Char}}", name)
+								.replace("{{Base}}", description)
+								.replace("{{Conversation}}", exampleConversation ?? "")
+								.replace("{{Text}}", helpPrompt),
+						},
+					],
+				},
+			],
+			{
+				temperature: 1.0,
+				topP: 0.9,
+				maxOutputTokens: 1000,
+			}
+		);
+
+		if (!response) {
+			throw new Error("도움말 생성에 실패했습니다.");
+		}
+		return response;
+	} catch (error) {
+		debugLog("Help generation error:", error);
+		return helpPrompt;
+	}
+}
+
+export {
+	analyzeMessageCompletion,
+	generateCharacterResponse,
+	generateHelpResponse,
+};

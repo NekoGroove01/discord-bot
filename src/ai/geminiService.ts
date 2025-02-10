@@ -14,7 +14,6 @@ export interface GeminiServiceConfig {
 	maxOutputTokens?: number;
 }
 
-
 export class GeminiService {
 	private readonly genAI: GoogleGenerativeAI;
 	private readonly model: any;
@@ -26,16 +25,19 @@ export class GeminiService {
 		});
 	}
 
-	async generateResponse(prompt: Prompt[], config?: GeminiServiceConfig): Promise<string | null> {
-		const { temperature, topP, maxOutputTokens } = config || {};
+	async generateResponse(
+		prompt: Prompt[],
+		config?: GeminiServiceConfig
+	): Promise<string | null> {
+		const generationConfig = config ?? {
+			temperature: 1.0,
+			topP: 0.9,
+			maxOutputTokens: 200,
+		};
 		try {
 			const result = await this.model.generateContent({
 				contents: prompt,
-				generationConfig: {
-					temperature: temperature ?? 0.5,
-					topP: topP ?? 0.9,
-					maxOutputTokens: maxOutputTokens ?? 150,
-				},
+				generationConfig,
 			});
 
 			return result.response.text();

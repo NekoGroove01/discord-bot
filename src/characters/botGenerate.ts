@@ -16,7 +16,10 @@ import { MessageBuffer, Prompt } from "../types.js";
 import BotState from "../state/botState.js";
 import botQueue from "../state/botQueue.js";
 import { processUserMessagesToCharacter } from "./process.js";
-import { analyzeMessageCompletion } from "../ai/geminiClient.js";
+import {
+	analyzeMessageCompletion,
+	generateHelpResponse,
+} from "../ai/geminiClient.js";
 import ChatHistoryManager from "../chatHistoryManager.js";
 
 interface BotClientConfig {
@@ -50,6 +53,10 @@ function generateBotClient(config: BotClientConfig): Client {
 	// 메시지 이벤트 핸들러 등록
 	client.on(Events.MessageCreate, async (message: Message) => {
 		try {
+			if (client.user?.id && message.mentions.has(client.user?.id)) {
+				await handleCommands(message);
+				return;
+			}
 			await handleMessage(message);
 		} catch (error) {
 			debugLog("메시지 처리 중 오류 발생:", error);
@@ -192,8 +199,42 @@ function generateBotClient(config: BotClientConfig): Client {
 	}
 
 	/**
+	 * handleCommands
+	 * -> slash command 외의 봇 명령어들을 처리
+	 * @param message string
+	 * @returns
+	 */
+
+	async function handleCommands(message: Message): Promise<void> {
+		// 만약 봇이 큐에 없으면 삽입
+		// 큐에 있으면 제거
+		// 이외 커맨드는 추가 예정
+
+		if (!botState.getJoinedState()) {
+			// 봇이 큐에 없는 경우, 큐에 참여시키고 초기화
+			botQueue.addBot(client, botPriority);
+			botPriority++;
+			botState.setJoinedState(true);
+			chatHistoryManager.resetBuffer(message.author.id);
+			// 이후 그대로 메세지 처리 (handleMessage)
+			await handleMessage(message);
+		} else if (
+			botState.getJoinedState() &&
+			message.cleanContent.includes("나가")
+		) {
+			// 봇을 큐에서 제거하고 초기화
+			botQueue.removeBot(client);
+			botState.setJoinedState(false);
+			// 대화 히스토리 초기화
+			chatHistoryManager.resetBuffer(message.author.id);
+		}
+	}
+
+	/**
 	 * handleInteraction
 	 * → /ping, /join, /leave 등 명령어 처리
+	 * @param interaction Interaction
+	 * @returns
 	 */
 	async function handleInteraction(interaction: Interaction): Promise<void> {
 		if (!interaction.isCommand()) return;
@@ -202,29 +243,17 @@ function generateBotClient(config: BotClientConfig): Client {
 			case "ping":
 				await interaction.reply("pong!");
 				break;
-			case "join":
-				// 이미 참여 중이면 무시
-				if (botState.getJoinedState()) return;
-
-				botQueue.addBot(client, botPriority);
-				botPriority++;
-				botState.setJoinedState(true);
-
-				// 대화 히스토리 초기화
-				chatHistoryManager.resetBuffer(interaction.user.id);
-
-				await interaction.reply(`${name}가 대화에 참여합니다!`);
-				break;
-			case "leave":
-				// 참여 중이 아니면 무시
-				if (!botState.getJoinedState()) return;
-
-				botQueue.removeBot(client);
-				botState.setJoinedState(false);
-				// 대화 히스토리 초기화
-				chatHistoryManager.resetBuffer(interaction.user.id);
-
-				await interaction.reply(`${name}가 대화에서 나갔습니다.`);
+			case "help":
+				await interaction.deferReply();
+				{
+					const reply = await generateHelpResponse({
+						name,
+						description,
+						exampleConversation,
+					});
+					console.log("봇 응답: ", reply);
+					await interaction.editReply(reply);
+				}
 				break;
 			default:
 				break;

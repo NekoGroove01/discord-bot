@@ -2,6 +2,7 @@ import { REST, Routes, SlashCommandBuilder } from "discord.js";
 import { debugLog } from "../utils";
 
 function registerCommands(
+	name: string,
 	token: string,
 	clientId: string,
 	guildId: string,
@@ -12,11 +13,8 @@ function registerCommands(
 			.setName("ping")
 			.setDescription("Replies with pong!"),
 		new SlashCommandBuilder()
-			.setName("join")
-			.setDescription("대화에 참여합니다!"),
-		new SlashCommandBuilder()
-			.setName("leave")
-			.setDescription("대화에서 나갑니다!"),
+			.setName("help")
+			.setDescription("봇 사용법을 알려 드려요!"),
 	].map((command) => command.toJSON());
 
 	const rest = new REST({ version: "10" }).setToken(token);
@@ -34,7 +32,7 @@ function registerCommands(
 
 			debugLog("명령어 등록을 성공적으로 완료했습니다.");
 		} catch (error) {
-			debugLog("명령어 등록 중 오류 발생:", error);
+			debugLog(`명령어 등록 중 오류 발생 (${name}): `, error);
 		}
 	})();
 }
