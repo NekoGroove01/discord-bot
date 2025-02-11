@@ -10,6 +10,8 @@ import {
 	Message,
 	TextChannel,
 	Interaction,
+	ChannelType,
+	Partials,
 } from "discord.js";
 import { debugLog } from "../utils.js";
 import { MessageBuffer, Prompt } from "../types.js";
@@ -42,7 +44,10 @@ function generateBotClient(config: BotClientConfig): Client {
 			GatewayIntentBits.Guilds,
 			GatewayIntentBits.GuildMessages,
 			GatewayIntentBits.MessageContent,
+			GatewayIntentBits.DirectMessages, // DM 수신용
+			GatewayIntentBits.DirectMessageTyping, // DM 타이핑 표시용
 		],
+		partials: [Partials.Channel],
 	});
 
 	// 상태 및 메시지 버퍼 초기화
@@ -94,14 +99,26 @@ function generateBotClient(config: BotClientConfig): Client {
 	 */
 	async function handleMessage(message: Message): Promise<void> {
 		const botState = botStateManager.getBotState(client);
+
+		const isDM = message.channel.type === ChannelType.DM;
+		if (isDM && message.author.id !== client.user?.id) {
+			if (!botState.getJoinedState()) {
+				botQueue.addBot(client, botPriority);
+				botPriority++;
+				botState.setJoinedState(true);
+			}
+		}
+
+		if (message.author.id === client.user?.id) {
+			botQueue.removeBot(client);
+			botState.setJoinedState(false);
+		}
+
+		// 봇이 보낸 메시지인 경우 무시
+		if (message.author.bot) return;
 		if (!botState.getJoinedState()) return;
 
 		debugLog("수신 메시지:", message.content);
-
-		if (message.content.startsWith("!reset")) {
-			chatHistoryManager.resetBuffer(message.author.id);
-			return;
-		}
 
 		const userId = message.author.id;
 		const nickname = message.member?.nickname ?? message.author.username;
