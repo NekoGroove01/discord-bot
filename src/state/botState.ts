@@ -1,11 +1,16 @@
 // state/bot_state.ts
 class BotState {
 	private isJoined: boolean;
-	private readonly conversationParticipants: Set<string>;
+	private lastResponseTime: Date | null = null;
+    private readonly TIMEOUT_DURATION = 1000 * 60 * 30; // 30 minutes timeout
 
-	constructor() {
+	constructor(state: boolean = false) {
 		this.isJoined = false;
-		this.conversationParticipants = new Set();
+		if (state) {
+            this.updateLastResponseTime();
+        } else {
+            this.lastResponseTime = null;
+        }
 	}
 
 	getJoinedState(): boolean {
@@ -16,17 +21,17 @@ class BotState {
 		this.isJoined = state;
 	}
 
-	addParticipant(botId: string): void {
-		this.conversationParticipants.add(botId);
+	updateLastResponseTime(): void {
+		this.lastResponseTime = new Date();
 	}
 
-	removeParticipant(botId: string): void {
-		this.conversationParticipants.delete(botId);
-	}
-
-	getParticipants(): Set<string> {
-		return this.conversationParticipants;
-	}
+	hasTimedOut(): boolean {
+        if (!this.lastResponseTime || !this.isJoined) return false;
+        
+        const currentTime = new Date();
+        const timeDiff = currentTime.getTime() - this.lastResponseTime.getTime();
+        return timeDiff > this.TIMEOUT_DURATION;
+    }
 }
 
 export default BotState;

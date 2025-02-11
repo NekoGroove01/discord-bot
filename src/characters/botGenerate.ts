@@ -94,10 +94,6 @@ function generateBotClient(config: BotClientConfig): Client {
 	 * → 봇 메시지와 사용자 메시지를 구분하여 각각 처리합니다.
 	 */
 	async function handleMessage(message: Message): Promise<void> {
-		if (message.author.bot) {
-			await handleBotMessage(message);
-			return;
-		}
 		if (!botState.getJoinedState()) return;
 
 		debugLog("수신 메시지:", message.content);
@@ -126,33 +122,6 @@ function generateBotClient(config: BotClientConfig): Client {
 		}
 
 		await handleUserMessage(buffer, message, userId);
-	}
-
-	/**
-	 * handleBotMessage
-	 * → 다른 봇의 메시지에 대해 일정 확률로 응답합니다.
-	 */
-	async function handleBotMessage(message: Message): Promise<void> {
-		// FIXME: 여기 다시 작성해야함
-		if (botState.getParticipants().has(message.author.id)) {
-			const shouldRespond = Math.random() < 0.7; // 70% 확률 응답
-			if (shouldRespond) {
-				await processUserMessagesToCharacter({
-					chatHistoryManager,
-					clientInfo: {
-						client,
-						userId: message.author.id,
-						channelId: message.channel.id,
-					},
-					prompt,
-					charInfo: {
-						name,
-						description,
-						exampleConversation,
-					},
-				});
-			}
-		}
 	}
 
 	/**
