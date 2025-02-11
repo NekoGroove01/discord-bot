@@ -26,7 +26,6 @@ export enum SetBufferFlags {
 
 export class ChatHistoryManager {
 	private readonly userBuffers: Map<string, MessageBuffer> = new Map();
-	private readonly EMOTION_RESET_TIME = 1000 * 60 * 30; // 30 minutes
 
 	/**
 	 * getBuffer

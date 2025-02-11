@@ -122,7 +122,7 @@ async function analyzeMessageCompletion(messages: string[]): Promise<number> {
 async function generateHelpResponse(charInfo: CharInfo): Promise<string> {
 	const geminiService = new GeminiService(
 		process.env.GEMINI_API_KEY!,
-		GeminiModel.Flash
+		GeminiModel.Flash // Use Flash model for faster response
 	);
 
 	try {
@@ -133,10 +133,15 @@ async function generateHelpResponse(charInfo: CharInfo): Promise<string> {
 					role: "user",
 					parts: [
 						{
+							// Generate help instruction
+							// {{Char}} - Character name
+							// {{Base}} - Basic information
+							// {{Conversation}} - Example conversation
+							// {{Text}} - Help prompt
 							text: BasicHelpInstruction.replace("{{Char}}", name)
 								.replace("{{Base}}", description)
 								.replace("{{Conversation}}", exampleConversation ?? "")
-								.replace("{{Text}}", helpPrompt),
+								.replace("{{Text}}", helpPrompt.replace("{{char}}", name)),
 						},
 					],
 				},
@@ -144,7 +149,7 @@ async function generateHelpResponse(charInfo: CharInfo): Promise<string> {
 			{
 				temperature: 1.0,
 				topP: 0.9,
-				maxOutputTokens: 1000,
+				maxOutputTokens: 1000, // Increase max tokens to allow for longer responses
 			}
 		);
 

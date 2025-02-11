@@ -26,7 +26,7 @@ function calculateDynamicTypingDuration(message: string): number {
 	const config = {
 		baseDelay: 100,
 		charDelay: 25,
-		complexityMultiplier: 50,
+		complexityMultiplier: 75,
 		maxDelay: 2500,
 	};
 	// 메시지 복잡도 계산
