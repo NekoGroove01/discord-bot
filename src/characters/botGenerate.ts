@@ -13,7 +13,7 @@ import {
 } from "discord.js";
 import { debugLog } from "../utils.js";
 import { MessageBuffer, Prompt } from "../types.js";
-import BotState from "../state/botState.js";
+import { botStateManager } from "../state/botStateManager.js";
 import botQueue from "../state/botQueue.js";
 import { processUserMessagesToCharacter } from "./process.js";
 import {
@@ -46,7 +46,6 @@ function generateBotClient(config: BotClientConfig): Client {
 	});
 
 	// 상태 및 메시지 버퍼 초기화
-	const botState = new BotState();
 	const chatHistoryManager = new ChatHistoryManager();
 	let botPriority = 0;
 
@@ -94,6 +93,7 @@ function generateBotClient(config: BotClientConfig): Client {
 	 * → 봇 메시지와 사용자 메시지를 구분하여 각각 처리합니다.
 	 */
 	async function handleMessage(message: Message): Promise<void> {
+		const botState = botStateManager.getBotState(client);
 		if (!botState.getJoinedState()) return;
 
 		debugLog("수신 메시지:", message.content);
@@ -178,6 +178,7 @@ function generateBotClient(config: BotClientConfig): Client {
 		// 만약 봇이 큐에 없으면 삽입
 		// 큐에 있으면 제거
 		// 이외 커맨드는 추가 예정
+		const botState = botStateManager.getBotState(client);
 
 		if (!botState.getJoinedState()) {
 			// 봇이 큐에 없는 경우, 큐에 참여시키고 초기화

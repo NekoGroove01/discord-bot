@@ -16,6 +16,7 @@ import {
 import { generateCharacterResponse } from "../ai/geminiClient.js";
 import { Client } from "discord.js";
 import ChatHistoryManager, { SetBufferFlags } from "../chatHistoryManager.js";
+import { getBotState } from "../state/botStateManager.js";
 
 interface ClientInfo {
 	client: Client;
@@ -105,7 +106,10 @@ export async function processUserMessagesToCharacter(
 			await channel.send(line);
 		}
 
-		debugLog("메시지 처리 완료");
+		const botState = getBotState(client);
+		botState.updateLastResponseTime();
+
+		debugLog("메시지 처리 완료: ", { userId });
 	} catch (error) {
 		console.error("processUserMessagesToCharacter 오류:", error);
 
