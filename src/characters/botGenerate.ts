@@ -101,14 +101,18 @@ function generateBotClient(config: BotClientConfig): Client {
 		const botState = botStateManager.getBotState(client);
 
 		const isDM = message.channel.type === ChannelType.DM;
-		if (isDM && message.author.id !== client.user?.id) {
-			if (!botState.getJoinedState()) {
-				botQueue.addBot(client, botPriority);
-				botPriority++;
-				botState.setJoinedState(true);
+		if (isDM) {
+			// DM 채널인 경우, 큐와 상관없이 메세지 처리
+			let buffer = chatHistoryManager.getBuffer(message.author.id);
+			if (!buffer) {
+				buffer = chatHistoryManager.createBuffer(message.author.id);
 			}
+			if (buffer?.isProcessing) return;
+			
+			await handleUserMessage(buffer, message, message.author.id);
+			return;
 		}
-
+		
 		if (message.author.id === client.user?.id) {
 			botQueue.removeBot(client);
 			botState.setJoinedState(false);
@@ -116,6 +120,7 @@ function generateBotClient(config: BotClientConfig): Client {
 
 		// 봇이 보낸 메시지인 경우 무시
 		if (message.author.bot) return;
+		// DM이 아닌 경우 무시
 		if (!botState.getJoinedState()) return;
 
 		debugLog("수신 메시지:", message.content);
@@ -128,6 +133,7 @@ function generateBotClient(config: BotClientConfig): Client {
 		let buffer = chatHistoryManager.getBuffer(userId);
 		if (buffer?.isProcessing) return;
 
+		// FIXME: 이제 대화가 버퍼에 추가되므로 이전 대화 로드는 필요 없을듯? 봇이 실시간으로 관리되니까까
 		if (!buffer || buffer.conversation.length === 0) {
 			buffer = chatHistoryManager.createBuffer(userId);
 			buffer.conversation = await chatHistoryManager.loadHistory({
@@ -158,30 +164,37 @@ function generateBotClient(config: BotClientConfig): Client {
 		// 메시지 완성도 평가 (Gemini API 호출 전 조건 판별)
 		const analysis: number = await analyzeMessageCompletion(buffer.messages);
 		debugLog("대화 분석 점수:", analysis);
-		// 마지막 메시지가 "."이면 응답 무조건 호출, 점수가 50 이상이면 응답 호출
-		if (buffer.messages[buffer.messages.length] !== "." && analysis < 50)
+		// 마지막 메시지가 "."이면 응답 무조건 호출 OR 점수가 50 이상이면 응답 호출
+		const lastMessage = buffer.messages[buffer.messages.length - 1] || "";
+		if (!lastMessage.trimEnd().endsWith(".") && analysis < 50) {
 			return;
-
-		const currentBuffer = chatHistoryManager.getBuffer(userId);
-		if (currentBuffer && currentBuffer.messages.length > 0) {
-			const bots = botQueue.getBots();
-			for (const { bot } of bots) {
-				await processUserMessagesToCharacter({
-					chatHistoryManager,
-					clientInfo: {
-						client: bot,
-						userId,
-						channelId: message.channel.id,
-					},
-					prompt,
-					charInfo: {
-						name,
-						description,
-						exampleConversation,
-					},
-				});
-			}
 		}
+
+		// 대화 버퍼 초기화
+		const currentBuffer = chatHistoryManager.getBuffer(userId);
+		if (!currentBuffer || !currentBuffer.messages.length) {
+			return;
+		}
+
+		const bots = botQueue.getBots();
+		for (const { bot } of bots) {
+			await processUserMessagesToCharacter({
+				chatHistoryManager,
+				clientInfo: {
+					client: bot,
+					userId,
+					channelId: message.channel.id,
+				},
+				prompt,
+				charInfo: {
+					name,
+					description,
+					exampleConversation,
+				},
+			});
+		}
+
+		
 	}
 
 	/**
@@ -253,6 +266,10 @@ function generateBotClient(config: BotClientConfig): Client {
         if (botState.hasTimedOut() && botState.getJoinedState()) {
             botState.setJoinedState(false);
             botQueue.removeBot(client);
+			// Remove chat history
+			if (client.user?.id) {
+				chatHistoryManager.resetBuffer(client.user?.id);
+			}
 			debugLog("Bot timed out and removed from queue", client.user?.username);
         }
     }, 60000); // Check every minute
