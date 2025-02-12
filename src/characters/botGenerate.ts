@@ -15,7 +15,7 @@ import {
 } from "discord.js";
 import { debugLog } from "../utils.js";
 import { MessageBuffer, Prompt } from "../types.js";
-import { botStateManager } from "../state/botStateManager.js";
+import { botStateManager, getBotState } from "../state/botStateManager.js";
 import botQueue from "../state/botQueue.js";
 import { processUserMessagesToCharacter } from "./process.js";
 import {
@@ -246,6 +246,15 @@ function generateBotClient(config: BotClientConfig): Client {
 				break;
 		}
 	}
+
+	// Add interval check for timeout
+    setInterval(() => {
+        const botState = getBotState(client);
+        if (botState.hasTimedOut() && botState.getJoinedState()) {
+            botState.setJoinedState(false);
+            botQueue.removeBot(client);
+        }
+    }, 60000); // Check every minute
 
 	return client;
 }
