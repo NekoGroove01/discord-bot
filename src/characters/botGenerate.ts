@@ -253,6 +253,7 @@ function generateBotClient(config: BotClientConfig): Client {
         if (botState.hasTimedOut() && botState.getJoinedState()) {
             botState.setJoinedState(false);
             botQueue.removeBot(client);
+			debugLog("Bot timed out and removed from queue", client.user?.username);
         }
     }, 60000); // Check every minute
 
