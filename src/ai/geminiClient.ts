@@ -10,7 +10,7 @@ import {
 } from "./prompt.js";
 import { CharInfo, Prompt, TimeInfo } from "../types.js";
 import { GeminiModel, GeminiService } from "./geminiService.js";
-import { BasicHelpInstruction, helpPrompt } from "./instruction.js";
+import { BasicHelpInstruction, farewellInstruction, helpPrompt } from "./instruction.js";
 
 dotenv.config();
 
@@ -163,8 +163,47 @@ async function generateHelpResponse(charInfo: CharInfo): Promise<string> {
 	}
 }
 
+async function generateFarewellResponse(charInfo: CharInfo): Promise<string> {
+	const geminiService = new GeminiService(
+		process.env.GEMINI_API_KEY!,
+		GeminiModel.Flash // Use Flash model for faster response
+	);
+
+	try {
+		const { name, description, exampleConversation } = charInfo;
+		const response = await geminiService.generateResponse(
+			[
+				{
+					role: "user",
+					parts: [
+						{
+							// Generate help instruction
+							// {{Char}} - Character name
+							// {{Base}} - Basic information
+							// {{Conversation}} - Example conversation
+							// {{Text}} - Help prompt
+							text: farewellInstruction.replace("{{Char}}", name)
+								.replace("{{Base}}", description)
+								.replace("{{Conversation}}", exampleConversation ?? "")
+						},
+					],
+				},
+			],
+		);
+
+		if (!response) {
+			throw new Error("퇴장 응답 생성에 실패했습니다.");
+		}
+		return response;
+	} catch (error) {
+		debugLog("Farewell Response error:", error);
+		return "대화에서 나갑니다다!";
+	}
+}
+
 export {
 	analyzeMessageCompletion,
 	generateCharacterResponse,
 	generateHelpResponse,
+	generateFarewellResponse,
 };

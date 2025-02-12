@@ -20,6 +20,7 @@ import botQueue from "../state/botQueue.js";
 import { processUserMessagesToCharacter } from "./process.js";
 import {
 	analyzeMessageCompletion,
+	generateFarewellResponse,
 	generateHelpResponse,
 } from "../ai/geminiClient.js";
 import ChatHistoryManager from "../chatHistoryManager.js";
@@ -150,6 +151,9 @@ function generateBotClient(config: BotClientConfig): Client {
 	/**
 	 * handleUserMessage
 	 * → 사용자의 메시지를 버퍼에 추가한 후, API 호출 조건에 맞으면 응답 처리합니다.
+	 * @param buffer MessageBuffer
+	 * @param message Message
+	 * @param userId string
 	 */
 	async function handleUserMessage(
 		buffer: MessageBuffer,
@@ -216,6 +220,7 @@ function generateBotClient(config: BotClientConfig): Client {
 			botPriority++;
 			botState.setJoinedState(true);
 			chatHistoryManager.resetBuffer(message.author.id);
+			
 			// 이후 그대로 메세지 처리 (handleMessage)
 			await handleMessage(message);
 		} else if (
@@ -225,8 +230,13 @@ function generateBotClient(config: BotClientConfig): Client {
 			// 봇을 큐에서 제거하고 초기화
 			botQueue.removeBot(client);
 			botState.setJoinedState(false);
+
 			// 대화 히스토리 초기화
 			chatHistoryManager.resetBuffer(message.author.id);
+
+			// 작별 인사 생성 (대화 상대에게 reply)
+			const response = await generateFarewellResponse({name, description, exampleConversation});
+			await message.reply(response);
 		}
 	}
 
