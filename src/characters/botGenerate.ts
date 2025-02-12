@@ -12,7 +12,7 @@ import {
 	ChannelType,
 	Partials,
 } from "discord.js";
-import { debugLog } from "../utils.js";
+import { logCommand, logDebug, logError } from "../logger.js";
 import { MessageBuffer, Prompt } from "../types.js";
 import { botStateManager, getBotState } from "../state/botStateManager.js";
 import botQueue from "../state/botQueue.js";
@@ -63,7 +63,13 @@ function generateBotClient(config: BotClientConfig): Client {
 			}
 			await handleMessage(message);
 		} catch (error) {
-			debugLog("메시지 처리 중 오류 발생:", error);
+			logError({
+				error: error as Error,
+				context: "Error in MessageCreate Event Handler",
+				metadata: {
+					message,
+				},
+			});
 			if (message.channel.isTextBased() && "send" in message.channel) {
 				await message.channel.send("미안, 메시지 처리 중 오류가 발생했어.");
 			}
@@ -78,15 +84,24 @@ function generateBotClient(config: BotClientConfig): Client {
 
 	// 에러 핸들러 등록
 	client.on("error", (error) => {
-		debugLog("Discord 클라이언트 에러:", error);
+		logError({
+			error,
+			context: "Unknown Discord Client Error",
+		});
 	});
 	process.on("unhandledRejection", (error) =>
-		debugLog("Unhandled promise rejection:", error)
+		logError({
+			error: error as Error,
+			context: "Unhandled Promise Rejection from Discord Client",
+		})
 	);
 
 	// 클라이언트 준비 시
 	client.once(Events.ClientReady, () => {
-		debugLog(`${name} 준비 완료!`);
+		logDebug(`${name} 준비 완료!`, {
+			clientId: client.user?.id,
+			clientUsername: client.user?.username,
+		});
 	});
 
 	///////////////////////////
@@ -135,7 +150,7 @@ function generateBotClient(config: BotClientConfig): Client {
 		// DM이 아닌 경우 무시
 		if (!botState.getJoinedState()) return;
 
-		debugLog("수신 메시지:", message.content);
+		logDebug("메시지 수신: ", message.content);
 
 		chatHistoryManager.addUserMessage(userId, message.content, nickname);
 
@@ -158,14 +173,14 @@ function generateBotClient(config: BotClientConfig): Client {
 		message: Message,
 		userId: string
 	): Promise<void> {
-		debugLog("메시지 버퍼 상태:", {
+		logDebug("메시지 버퍼 상태:", {
 			userId,
 			messageCount: buffer.messages.length,
 			messages: buffer.messages,
 		});
 		// 메시지 완성도 평가 (Gemini API 호출 전 조건 판별)
 		const analysis: number = await analyzeMessageCompletion(buffer.messages);
-		debugLog("대화 분석 점수:", analysis);
+		logDebug("대화 분석 점수:", analysis);
 		// 마지막 메시지가 "."이면 응답 무조건 호출 OR 점수가 50 이상이면 응답 호출
 		const lastMessage = buffer.messages[buffer.messages.length - 1] || "";
 		if (!lastMessage.trimEnd().endsWith(".") && analysis < 50) {
@@ -213,15 +228,11 @@ function generateBotClient(config: BotClientConfig): Client {
 		message: Message,
 		userId: string
 	): Promise<void> {
-		debugLog("메시지 버퍼 상태:", {
-			userId,
-			messageCount: buffer.messages.length,
-			messages: buffer.messages,
-		});
+		logDebug("DM 메시지 수신: ", message.content);
 
 		// 메시지 완성도 평가 (Gemini API 호출 전 조건 판별)
 		const analysis: number = await analyzeMessageCompletion(buffer.messages);
-		debugLog("대화 분석 점수:", analysis);
+		logDebug("대화 분석 점수:", analysis);
 		// 마지막 메시지가 "."이면 응답 무조건 호출 OR 점수가 50 이상이면 응답 호출
 		const lastMessage = buffer.messages[buffer.messages.length - 1] || "";
 		if (!lastMessage.trimEnd().endsWith(".") && analysis < 50) {
@@ -308,6 +319,11 @@ function generateBotClient(config: BotClientConfig): Client {
 		const { commandName } = interaction;
 		switch (commandName) {
 			case "ping":
+				logCommand({
+					userId: interaction.user.id,
+					username: interaction.user.username,
+					command: "ping",
+				});
 				await interaction.reply("pong!");
 				break;
 			case "help":
@@ -339,7 +355,7 @@ function generateBotClient(config: BotClientConfig): Client {
 			if (client.user?.id) {
 				chatHistoryManager.resetBuffer(client.user?.id);
 			}
-			debugLog("Bot timed out and removed from queue", client.user?.username);
+			logDebug("Bot timed out and removed from queue", client.user?.username);
 		}
 	}, 60000); // Check every minute
 

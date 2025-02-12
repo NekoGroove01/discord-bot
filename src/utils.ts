@@ -106,19 +106,6 @@ function cleanBotResponse(response: string): string {
 }
 
 /**
- * 디버깅 메시지를 출력합니다.
- * 포맷: [timestamp] - message
- * @param message string
- * @param data any
- */
-
-function debugLog(message: string, data?: any) {
-	const timestamp = new Date().toISOString();
-	console.log(`${timestamp} - ${message}`);
-	if (data) console.log(data);
-}
-
-/**
  * 채팅 기록에서 명령어를 찾습니다.
  * 해당 명령어부터 채팅 기록이 시작되어 사용자의 입력까지만 반환합니다.
  */
@@ -147,6 +134,5 @@ export {
 	splitIntoNaturalLines,
 	calculateDynamicTypingDuration,
 	cleanBotResponse,
-	debugLog,
 	filterMessagesFromCommand,
 };

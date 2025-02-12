@@ -1,6 +1,6 @@
 // llm_client.ts - Gemini API를 사용하여 캐릭터 응답 생성하기
 import * as dotenv from "dotenv";
-import { debugLog } from "../utils.js";
+import { logError } from "../logger.js";
 import {
 	systemPrompt,
 	prefillPrompt,
@@ -10,7 +10,11 @@ import {
 } from "./prompt.js";
 import { CharInfo, Prompt, TimeInfo } from "../types.js";
 import { GeminiModel, GeminiService } from "./geminiService.js";
-import { BasicHelpInstruction, farewellInstruction, helpPrompt } from "./instruction.js";
+import {
+	BasicHelpInstruction,
+	farewellInstruction,
+	helpPrompt,
+} from "./instruction.js";
 
 dotenv.config();
 
@@ -72,7 +76,15 @@ async function generateCharacterResponse(
 
 		return response;
 	} catch (error) {
-		debugLog("Error while generating response: ", error);
+		logError({
+			error: error as Error,
+			context: "Gemini Character Response Generation",
+			metadata: {
+				characterName: options.charInfo.name,
+				conversationLength: options.conversations.length,
+				hasAdditionalPrompt: !!options.additionalPrompt,
+			},
+		});
 		if (error instanceof Error) {
 			throw new Error(`Gemini API 오류: ${error.message}`);
 		}
@@ -114,7 +126,13 @@ async function analyzeMessageCompletion(messages: string[]): Promise<number> {
 		const score = parseInt(response ?? "0");
 		return Math.min(100, Math.max(0, score));
 	} catch (error) {
-		console.error("Message analysis error:", error);
+		logError({
+			error: error as Error,
+			context: "Gemini Message Completion Analysis",
+			metadata: {
+				messages: latestMessages,
+			},
+		});
 		return 0;
 	}
 }
@@ -158,7 +176,15 @@ async function generateHelpResponse(charInfo: CharInfo): Promise<string> {
 		}
 		return response;
 	} catch (error) {
-		debugLog("Help generation error:", error);
+		logError({
+			error: error as Error,
+			context: "Gemini Help Response Generation",
+			metadata: {
+				CharacterName: charInfo.name,
+				CharacterDescription: charInfo.description,
+				ExampleConversation: charInfo.exampleConversation,
+			},
+		});
 		return helpPrompt;
 	}
 }
@@ -171,32 +197,39 @@ async function generateFarewellResponse(charInfo: CharInfo): Promise<string> {
 
 	try {
 		const { name, description, exampleConversation } = charInfo;
-		const response = await geminiService.generateResponse(
-			[
-				{
-					role: "user",
-					parts: [
-						{
-							// Generate help instruction
-							// {{Char}} - Character name
-							// {{Base}} - Basic information
-							// {{Conversation}} - Example conversation
-							// {{Text}} - Help prompt
-							text: farewellInstruction.replace("{{Char}}", name)
-								.replace("{{Base}}", description)
-								.replace("{{Conversation}}", exampleConversation ?? "")
-						},
-					],
-				},
-			],
-		);
+		const response = await geminiService.generateResponse([
+			{
+				role: "user",
+				parts: [
+					{
+						// Generate help instruction
+						// {{Char}} - Character name
+						// {{Base}} - Basic information
+						// {{Conversation}} - Example conversation
+						// {{Text}} - Help prompt
+						text: farewellInstruction
+							.replace("{{Char}}", name)
+							.replace("{{Base}}", description)
+							.replace("{{Conversation}}", exampleConversation ?? ""),
+					},
+				],
+			},
+		]);
 
 		if (!response) {
 			throw new Error("퇴장 응답 생성에 실패했습니다.");
 		}
 		return response;
 	} catch (error) {
-		debugLog("Farewell Response error:", error);
+		logError({
+			error: error as Error,
+			context: "Gemini Farewell Response Generation",
+			metadata: {
+				CharacterName: charInfo.name,
+				CharacterDescription: charInfo.description,
+				ExampleConversation: charInfo.exampleConversation,
+			},
+		});
 		return "대화에서 나갑니다다!";
 	}
 }

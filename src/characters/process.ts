@@ -10,9 +10,9 @@ import { CharInfo, Prompt } from "../types.js";
 import {
 	calculateDynamicTypingDuration,
 	cleanBotResponse,
-	debugLog,
 	splitIntoNaturalLines,
 } from "../utils.js";
+import { logDebug, logError } from "../logger.js";
 import { generateCharacterResponse } from "../ai/geminiClient.js";
 import { Client } from "discord.js";
 import ChatHistoryManager, { SetBufferFlags } from "../chatHistoryManager.js";
@@ -40,7 +40,7 @@ export async function processUserMessagesToCharacter(
 	const buffer = chatHistoryManager.getBuffer(userId);
 	try {
 		if (!buffer || buffer.messages.length === 0 || buffer.isProcessing) {
-			debugLog("버퍼 없거나 처리 중:", { buffer, userId });
+			logDebug("메시지 버퍼가 없거나 처리 중입니다.");
 			return;
 		}
 
@@ -48,11 +48,15 @@ export async function processUserMessagesToCharacter(
 		const currentMessages = [...buffer.messages];
 		buffer.messages = []; // 버퍼 초기화
 
-		debugLog("메시지 처리 시작", { messages: currentMessages });
+		logDebug("메시지 처리 시작", { messages: currentMessages });
 
 		const channel = await client.channels.fetch(channelId);
 		if (!channel?.isTextBased() || !("send" in channel)) {
-			debugLog("유효하지 않은 채널:", channelId);
+			logError({
+				error: new Error("Invalid channel"),
+				context: "유효하지 않은 채널",
+				metadata: { channelId },
+			});
 			return;
 		}
 
@@ -63,7 +67,7 @@ export async function processUserMessagesToCharacter(
 			throw new Error("Conversation is empty.");
 		}
 
-		debugLog("API 호출 시작", {
+		logDebug("API 호출 시작", {
 			conversation: buffer.conversation.map((item) => ({
 				role: item.role,
 				text: item.parts[0].text,
@@ -83,14 +87,18 @@ export async function processUserMessagesToCharacter(
 			currentTimeInfo,
 		});
 		if (!response) {
-			debugLog("API 응답 없음");
+			logError({
+				error: new Error("API response is empty"),
+				context: "API 응답이 비어 있음",
+				metadata: { userId },
+			});
 			await channel.send("미안. 응답 생성에 문제가 생겼어.");
 			buffer.isProcessing = false;
 			return;
 		}
 
 		const cleanedResponse = cleanBotResponse(response);
-		debugLog("API 응답 수신", { response: cleanedResponse });
+		logDebug("API 응답 수신", { response: cleanedResponse });
 
 		// 응답을 메세지 버퍼에 넣기
 		chatHistoryManager.addBotResponse(userId, cleanedResponse);
@@ -109,9 +117,13 @@ export async function processUserMessagesToCharacter(
 		const botState = getBotState(client);
 		botState.updateLastResponseTime();
 
-		debugLog("메시지 처리 완료: ", { userId });
+		logDebug("메시지 처리 완료", { userId });
 	} catch (error) {
-		console.error("processUserMessagesToCharacter 오류:", error);
+		logError({
+			error: error as Error,
+			context: "Discord Client Error in Message Processing",
+			metadata: { userId },
+		});
 
 		const channel = await client.channels.fetch(channelId);
 		if (channel?.isTextBased() && "send" in channel) {

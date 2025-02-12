@@ -1,6 +1,6 @@
 // services/ai/GeminiService.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { debugLog } from "../utils";
+import { logError } from "../logger";
 import { Prompt } from "../types";
 
 export enum GeminiModel {
@@ -42,7 +42,13 @@ export class GeminiService {
 
 			return result.response.text();
 		} catch (error) {
-			debugLog("Gemini API Error:", error);
+			logError({
+				error: error as Error,
+				context: "Gemini API Call",
+				metadata: {
+					prompt,
+				},
+			});
 			return null;
 		}
 	}

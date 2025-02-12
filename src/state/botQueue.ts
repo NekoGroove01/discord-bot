@@ -1,6 +1,6 @@
 // state/bot_queue.ts
 import { Client } from "discord.js";
-import { debugLog } from "../utils";
+import { logDebug } from "../logger";
 import { getBotState } from "./botStateManager";
 
 class BotQueue {
@@ -17,7 +17,7 @@ class BotQueue {
 		this.sortQueue();
 		const botState = getBotState(bot);
 		botState.setJoinedState(true);
-		debugLog("Bot added to queue: ", {
+		logDebug("봇 큐에 추가", {
 			botId: bot.user?.id,
 			queueLength: this.queue.length,
 		});
@@ -33,7 +33,7 @@ class BotQueue {
 			this.queue.splice(index, 1);
 			const botState = getBotState(bot);
 			botState.setJoinedState(false);
-			debugLog("Bot removed from queue", {
+			logDebug("봇 큐에서 제거", {
 				botId: bot.user?.id,
 				queueLength: this.queue.length,
 			});
