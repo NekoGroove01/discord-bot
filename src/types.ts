@@ -40,7 +40,7 @@ export interface Message {
 }
 
 export interface Prompt {
-	role: "user" | "model";
+	role: "user" | "model" | "system";
 	parts: { text: string }[];
 }
 

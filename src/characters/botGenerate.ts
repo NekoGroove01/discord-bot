@@ -168,48 +168,76 @@ function generateBotClient(config: BotClientConfig): Client {
 	 * @param message Message
 	 * @param userId string
 	 */
+
+	// FIXME: 쿨다운 타이머 관련 코드 추가
+	const cooldownTimers = new Map<string, NodeJS.Timeout>();
+
 	async function handleUserMessage(
 		buffer: MessageBuffer,
 		message: Message,
 		userId: string
 	): Promise<void> {
+		// 버퍼에 메시지를 추가
+		chatHistoryManager.addUserMessage(
+			userId,
+			message.content,
+			message.author.username
+		);
+
+		// 버퍼 상태 디버그
 		logDebug("메시지 버퍼 상태:", {
 			userId,
 			messageCount: buffer.messages.length,
 			messages: buffer.messages,
 		});
-		// 메시지 완성도 평가 (Gemini API 호출 전 조건 판별)
-		const analysis: number = await analyzeMessageCompletion(buffer.messages);
+
+		// 마지막 메시지 확인
+		const lastMessage = buffer.messages[buffer.messages.length - 1] ?? "";
+
+		// 1) 마지막 메시지가 '.'이면 → 분석 없이 곧바로 응답 생성
+		if (lastMessage.trimEnd().endsWith(".")) {
+			console.log("'.'으로 끝나는 메시지 → 분석 없이 바로 응답합니다.");
+			await handleUserMessage(buffer, message, userId);
+			return;
+		}
+
+		// 2) 현재 쿨다운 상태인지 확인
+		if (cooldownTimers.has(userId)) {
+			// 쿨다운 적용 중이면 새 메시지는 버퍼에만 쌓고, 분석은 진행 안 함
+			console.log(
+				"쿨다운 중이므로 메시지만 버퍼에 추가하고 분석은 건너뜁니다."
+			);
+			return;
+		}
+
+		// 3) 점수 분석
+		const analysis = await analyzeMessageCompletion(buffer.messages);
 		logDebug("대화 분석 점수:", analysis);
-		// 마지막 메시지가 "."이면 응답 무조건 호출 OR 점수가 50 이상이면 응답 호출
-		const lastMessage = buffer.messages[buffer.messages.length - 1] || "";
-		if (!lastMessage.trimEnd().endsWith(".") && analysis < 50) {
-			console.log("응답 불필요");
-			return;
-		}
 
-		// 대화 버퍼 초기화
-		const currentBuffer = chatHistoryManager.getBuffer(userId);
-		if (!currentBuffer?.messages?.length) {
-			return;
-		}
+		// 4) 분석 점수가 50 미만이면 → 쿨다운 시작
+		if (analysis < 50) {
+			console.log("응답 필요 점수(50) 미만 → 1.5초 쿨다운 진입");
+			const timer = setTimeout(async () => {
+				// 쿨다운 종료 시점에 다시 분석 수행
+				cooldownTimers.delete(userId); // 쿨다운 해제
 
-		const bots = botQueue.getBots();
-		for (const { bot } of bots) {
-			await processUserMessagesToCharacter({
-				chatHistoryManager,
-				clientInfo: {
-					client: bot,
-					userId,
-					channelId: message.channel.id,
-				},
-				prompt,
-				charInfo: {
-					name,
-					description,
-					exampleConversation,
-				},
-			});
+				// 쿨다운 중에 새로 들어온 메시지 포함해서 다시 점수 재분석
+				const finalAnalysis = await analyzeMessageCompletion(buffer.messages);
+				console.log("쿨다운 종료 후 재분석 점수:", finalAnalysis);
+
+				// 점수 50 이상이면 그제서야 응답 생성
+				if (finalAnalysis >= 50) {
+					await handleUserMessage(buffer, message, userId);
+				} else {
+					console.log("재분석 점수 여전히 50 미만 → 응답하지 않음");
+				}
+			}, 1500);
+
+			// userId별로 쿨다운 타이머를 등록
+			cooldownTimers.set(userId, timer);
+		} else {
+			// 5) 점수가 50 이상이면 즉시 응답 생성
+			await handleUserMessage(buffer, message, userId);
 		}
 	}
 

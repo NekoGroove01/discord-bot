@@ -39,11 +39,14 @@ async function generateCharacterResponse(
 			  }, it is ${currentTimeInfo.isDay ? "daytime" : "nighttime"}.`
 			: "";
 
-		const geminiService = new GeminiService(process.env.GEMINI_API_KEY!);
+		const geminiService = new GeminiService(
+			process.env.GEMINI_API_KEY!,
+			GeminiModel.Flash
+		);
 
 		const response = await geminiService.generateResponse([
 			{
-				role: "user",
+				role: "system",
 				parts: [
 					{
 						text: `${systemPrompt} (${name})\n${description}\n\n###Example Speech Patterns/Styles of ${name} (NPC)\n${exampleConversation}`,
@@ -56,7 +59,7 @@ async function generateCharacterResponse(
 			},
 			...(conversations.length > 0 ? conversations : []),
 			{
-				role: "user",
+				role: "system",
 				parts: [
 					{
 						text: `## Time Information\n${timeContext}\n\n${algorithmPrompt}`,

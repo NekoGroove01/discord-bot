@@ -45,9 +45,6 @@ export class GeminiService {
 			logError({
 				error: error as Error,
 				context: "Gemini API Call",
-				metadata: {
-					prompt,
-				},
 			});
 			return null;
 		}
