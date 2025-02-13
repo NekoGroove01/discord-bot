@@ -46,7 +46,7 @@ async function generateCharacterResponse(
 
 		const response = await geminiService.generateResponse([
 			{
-				role: "system",
+				role: "user",
 				parts: [
 					{
 						text: `${systemPrompt} (${name})\n${description}\n\n###Example Speech Patterns/Styles of ${name} (NPC)\n${exampleConversation}`,
@@ -59,7 +59,7 @@ async function generateCharacterResponse(
 			},
 			...(conversations.length > 0 ? conversations : []),
 			{
-				role: "system",
+				role: "user",
 				parts: [
 					{
 						text: `## Time Information\n${timeContext}\n\n${algorithmPrompt}`,
