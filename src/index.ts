@@ -4,10 +4,10 @@
 */
 
 import * as dotenv from "dotenv";
-import { debugLog } from "./utils.js";
 import nahidaClient from "./characters/nahida/bot.js";
 import asunaClient from "./characters/asuna/bot.js";
 import arisClient from "./characters/aris/bot.js";
+import { logDebug } from "./logger.js";
 
 dotenv.config();
 
@@ -28,7 +28,7 @@ class BotManager {
 			await Promise.all(
 				this.bots.map(({ client, token }) => client.login(token))
 			);
-			debugLog("모든 봇이 성공적으로 시작되었습니다.");
+			logDebug("모든 봇이 성공적으로 시작되었습니다.");
 		} catch (error) {
 			console.error("봇 시작 중 오류 발생:", error);
 		}
@@ -38,7 +38,7 @@ class BotManager {
 	async shutdownBots(): Promise<void> {
 		try {
 			await Promise.all(this.bots.map(({ client }) => client.destroy()));
-			debugLog("모든 봇이 안전하게 종료되었습니다.");
+			logDebug("모든 봇이 안전하게 종료되었습니다.");
 		} catch (error) {
 			console.error("봇 종료 중 오류 발생:", error);
 		}

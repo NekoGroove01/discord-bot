@@ -1,7 +1,7 @@
 // state/botStateManager.ts
 import { Client } from "discord.js";
 import BotState from "./botState.js";
-import { debugLog } from "../utils.js";
+import { logDebug } from "../logger.js";
 
 class BotStateManager {
 	private readonly states: Map<string, BotState> = new Map();
@@ -15,7 +15,7 @@ class BotStateManager {
 		if (!state) {
 			state = new BotState();
 			this.states.set(client.user.id, state);
-			debugLog("New bot state created", { botId: client.user.id });
+			logDebug("New bot state created", { botId: client.user.id });
 		}
 		return state;
 	}
@@ -23,7 +23,7 @@ class BotStateManager {
 	removeBotState(client: Client): void {
 		if (client.user) {
 			this.states.delete(client.user.id);
-			debugLog("Bot state removed", { botId: client.user.id });
+			logDebug("Bot state removed", { botId: client.user.id });
 		}
 	}
 }

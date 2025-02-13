@@ -45,7 +45,11 @@ const logger = winston.createLogger({
 	transports: [
 		// 콘솔 출력
 		new winston.transports.Console({
-			format: winston.format.combine(winston.format.colorize(), logFormat),
+			level: "debug", // Ensure all log levels are output to the console
+			format: winston.format.combine(
+				winston.format.colorize(),
+				winston.format.simple()
+			),
 		}),
 		// 일반 로그 파일
 		new winston.transports.File({
